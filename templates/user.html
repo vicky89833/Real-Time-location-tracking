@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User - Location Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4/dist/socket.io.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #map { height: 500px; width: 100%; margin-bottom: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        #tracked-users { margin-top: 20px; }
+        .user-marker { color: blue; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Real-Time Location Viewer</h1>
+        <div id="map"></div>
+        <div id="tracked-users">
+            <h2>Tracked Users</h2>
+            <ul id="user-list"></ul>
+        </div>
+        <div id="debug">
+            <h3>Debug Info</h3>
+            <div id="debug-log"></div>
+        </div>
+    </div>
+
+    <script>
+        function logDebug(message) {
+            const debugLog = document.getElementById('debug-log');
+            debugLog.innerHTML += `<p>${new Date().toISOString()}: ${message}</p>`;
+            debugLog.scrollTop = debugLog.scrollHeight;
+        }
+
+        const socket = io();
+        let map;
+        const markers = {};
+        
+        logDebug('Script loaded. Initializing...');
+        
+        socket.on('connect', () => {
+            logDebug('Connected to WebSocket server');
+        });
+        
+        socket.on('disconnect', () => {
+            logDebug('Disconnected from WebSocket server');
+        });
+        
+        socket.on('connect_error', (error) => {
+            logDebug(`Connection error: ${error}`);
+        });
+        
+        function initMap() {
+            logDebug('Initializing map...');
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: 0, lng: 0 },
+                zoom: 2
+            });
+            logDebug('Map initialized');
+            
+            // Test marker to verify map works
+            new google.maps.Marker({
+                position: { lat: 0, lng: 0 },
+                map: map,
+                title: 'Test Marker'
+            });
+        }
+        
+        socket.on('location_update', function(data) {
+            logDebug(`Received location update: ${JSON.stringify(data)}`);
+            
+            const { user_id, lat, lng, address } = data;
+            const position = { lat: parseFloat(lat), lng: parseFloat(lng) };
+            
+            logDebug(`Processing position for ${user_id}: ${JSON.stringify(position)}`);
+            
+            if (!map) {
+                logDebug('Error: Map not initialized!');
+                return;
+            }
+            
+            // Update or create marker
+            if (markers[user_id]) {
+                markers[user_id].setPosition(position);
+                logDebug(`Updated marker for ${user_id}`);
+            } else {
+                markers[user_id] = new google.maps.Marker({
+                    position: position,
+                    map: map,
+                    title: user_id,
+                    label: user_id.substring(0, 1).toUpperCase()
+                });
+                
+                logDebug(`Created new marker for ${user_id}`);
+                
+                // Add to user list
+                const userItem = document.createElement('li');
+                userItem.className = 'user-marker';
+                userItem.textContent = `${user_id}: ${address || 'Unknown location'}`;
+                userItem.style.color = getColorForUser(user_id);
+                document.getElementById('user-list').appendChild(userItem);
+            }
+            
+            // Center map on the latest position
+            map.setCenter(position);
+        });
+        
+        function getColorForUser(userId) {
+            const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF'];
+            const hash = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            return colors[hash % colors.length];
+        }
+        
+        window.onload = initMap;
+    </script>
+          
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCc7prRXiL3u675NzBodZ03CYZYld8_GPU&callback=Function.prototype"></script>
+</body>
+</html>

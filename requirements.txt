@@ -1,0 +1,8 @@
+confluent-kafka
+fastapi
+uvicorn
+python-socketio
+geopy
+folium
+python-multipart
+

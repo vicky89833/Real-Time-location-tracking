@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Staff - Location Sender</title>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4/dist/socket.io.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #map { height: 400px; width: 100%; margin-bottom: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        button { padding: 10px 15px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:disabled { background: #cccccc; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Staff Location Sender</h1>
+        <div id="map"></div>
+        <div>
+            <label for="user-id">User ID:</label>
+            <input type="text" id="user-id" value="staff-1">
+        </div>
+        <div>
+            <button id="get-location">Send My Location</button>
+            <span id="status"></span>
+        </div>
+        <div id="location-info"></div>
+    </div>
+
+    <script>
+        const socket = new WebSocket(`ws://${window.location.host}/ws/location`);
+        let map;
+        let marker;
+        
+        socket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            document.getElementById('status').textContent = 'Location sent successfully!';
+            setTimeout(() => {
+                document.getElementById('status').textContent = '';
+            }, 2000);
+        };
+        
+        function initMap(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            if (!map) {
+                map = new google.maps.Map(document.getElementById('map'), {
+                    center: { lat, lng },
+                    zoom: 15
+                });
+            }
+            
+            if (marker) {
+                marker.setPosition({ lat, lng });
+            } else {
+                marker = new google.maps.Marker({
+                    position: { lat, lng },
+                    map: map,
+                    title: 'Your Location'
+                });
+            }
+            
+            map.setCenter({ lat, lng });
+            
+            document.getElementById('location-info').innerHTML = `
+                <p>Latitude: ${lat.toFixed(6)}</p>
+                <p>Longitude: ${lng.toFixed(6)}</p>
+            `;
+            
+            const userId = document.getElementById('user-id').value;
+            const message = JSON.stringify({
+                user_id: userId,
+                lat: lat,
+                lng: lng
+            });
+            
+            socket.send(message);
+        }
+        
+        function handleError(error) {
+            console.error('Error getting location:', error);
+            document.getElementById('status').textContent = 'Error getting location: ' + error.message;
+        }
+        
+        document.getElementById('get-location').addEventListener('click', function() {
+            document.getElementById('status').textContent = 'Getting location...';
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(initMap, handleError);
+            } else {
+                document.getElementById('status').textContent = 'Geolocation is not supported by this browser.';
+            }
+        });
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCc7prRXiL3u675NzBodZ03CYZYld8_GPU&callback=Function.prototype"></script>
+</body>
+</html>
