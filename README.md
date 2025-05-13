@@ -143,3 +143,22 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Socket.IO
 - Google Maps API
 - GeopyY
+
+##system design for the indane gas delivery.
+
+###functional requirements:
+
+1. consumer can send its location and get the location of the producer in real time
+2. producer can get locations of  all consumers and send its location to all other consumers.
+   3.consumer cannot see other consumers.
+3. producer can see all  others  consumers along with itself.
+4. the traveled path by consumer would be visible with different color.
+
+###non functional requirements:
+high availability
+scalable
+
+###tool and technologies:
+kafka : for realtime messeging
+python- django for producer and admin  management
+nextJs: for UI
